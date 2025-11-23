@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/colors.dart';
 import 'home_screen.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,7 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = true);
 
     try {
-      var url = Uri.parse('http://192.168.1.7:3000/login'); // Your server IP
+      var url = Uri.parse('http://localhost:3000/login');
+
+      // Your server IP
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -101,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -118,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: emailController,
                       decoration: _inputDecoration("Enter your email address"),
-                      
                     ),
                     const SizedBox(height: 15),
                     const Text(
@@ -150,7 +151,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 15),
                     Center(
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
+
                         child: const Text(
                           "Forgot password?",
                           style: TextStyle(color: AppColors.lavenderDark),
@@ -184,31 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-                    // Google Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.lavenderDark,
-                            width: 2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: const Text(
-                          "Continue with Google",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: AppColors.lavenderDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
+
                     // Sign Up Text
                     Center(
                       child: GestureDetector(
