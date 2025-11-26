@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
-import 'home_screen.dart';
+import 'customer_home_screen.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 
@@ -97,7 +97,7 @@ class AccessChoiceScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => HomeScreen()),
+                        MaterialPageRoute(builder: (_) => CustomerHomeScreen()),
                       );
                     },
                     child: const Text(

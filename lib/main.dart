@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/colors.dart';
-import 'screens/home_screen.dart';
-import 'screens/access_choice_screen.dart'; // create this next
+import 'screens/customer_home_screen.dart';
+import 'screens/seller_home_screen.dart';
+import 'screens/access_choice_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -34,9 +35,9 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Fade animation setup
+    // Fade animation
     _controller = AnimationController(
-      duration: Duration(seconds: 2),
+      duration: const Duration(seconds: 2),
       vsync: this,
     );
 
@@ -45,32 +46,51 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-    _controller.forward(); // start fade animation
+    _controller.forward();
 
-    // Navigate after 3 seconds and check login
-    Timer(Duration(seconds: 3), () async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    // Navigate after 3 seconds
+    navigateAfterDelay();
+  }
 
-      if (isLoggedIn) {
-        // Already logged in → go to HomeScreen
+  Future<void> navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    String? userRole = prefs.getString('userRole')?.toLowerCase();
+    print("isLoggedIn: $isLoggedIn, userRole: $userRole");
+
+    if (isLoggedIn) {
+      if (userRole == 'seller') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (_) => const SellerHomeScreen()),
+        );
+      } else if (userRole == 'customer') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
         );
       } else {
-        // Not logged in → go to AccessChoiceScreen
+        // Clear invalid data
+        await prefs.clear();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AccessChoiceScreen()),
+          MaterialPageRoute(builder: (_) => const AccessChoiceScreen()),
         );
       }
-    });
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AccessChoiceScreen()),
+      );
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose(); // avoid memory leak
+    _controller.dispose();
     super.dispose();
   }
 

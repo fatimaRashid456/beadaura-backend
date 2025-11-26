@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/colors.dart';
-import 'home_screen.dart';
+import 'Customer_home_screen.dart';
 import 'login_screen.dart';
 import 'seller_home_screen.dart';
 
@@ -204,7 +204,7 @@ class _SignupScreenState extends State<SignupScreen> {
             nextScreen =
                 const SellerHomeScreen(); // *** send sellers to SellerHomeScreen ***
           } else {
-            nextScreen = HomeScreen(); // customers go to HomeScreen
+            nextScreen = CustomerHomeScreen(); // customers go to HomeScreen
           }
 
           Navigator.pushReplacement(

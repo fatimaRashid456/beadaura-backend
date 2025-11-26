@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/colors.dart';
-import 'home_screen.dart';
+import 'customer_home_screen.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import 'seller_home_screen.dart';
@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => CustomerHomeScreen()),
           );
         }
       } else {
