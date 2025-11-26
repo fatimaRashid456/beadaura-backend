@@ -6,6 +6,7 @@ import '../utils/colors.dart';
 import 'home_screen.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
+import 'seller_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = true);
 
     try {
-      var url = Uri.parse('http://localhost:3000/login');
+      var url = Uri.parse('http://192.168.1.7:3000/login');
 
       // Your server IP
       var response = await http.post(
@@ -45,10 +46,18 @@ class _LoginScreenState extends State<LoginScreen> {
         await prefs.setString('userRole', data['role']);
         await prefs.setString('userName', data['name']);
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+        // Navigate based on role
+        if (data['role'] == 'seller') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => SellerHomeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        }
       } else {
         var data = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(

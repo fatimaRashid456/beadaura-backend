@@ -1,13 +1,34 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const nodemailer = require("nodemailer");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
 
-// MongoDB
+// Make uploads folder if not exists
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+// Static folder to serve images
+app.use("/uploads", express.static(uploadDir));
+
+// Multer storage settings
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + ext);
+  },
+});
+const upload = multer({ storage });
+
 const uri =
   "mongodb+srv://fatimarashid312_db_user:b3uuBaZyml7B3u0f@cluster0.pvmvetz.mongodb.net/beadaura?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
@@ -31,6 +52,7 @@ async function startServer() {
 
   const db = client.db("beadaura");
   const users = db.collection("users");
+  const products = db.collection("products");
 
   await users.createIndex({ email: 1 }, { unique: true });
 
@@ -49,12 +71,10 @@ async function startServer() {
       } = req.body;
 
       const normalizedEmail = email.trim().toLowerCase();
-
       const existing = await users.findOne({ email: normalizedEmail });
       if (existing)
         return res.status(400).json({ message: "Email already exists" });
 
-      // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
       otps[normalizedEmail] = {
@@ -73,7 +93,6 @@ async function startServer() {
         },
       };
 
-      // Send email
       await transporter.sendMail({
         from: '"BeadAura" <beadaura23@gmail.com>',
         to: normalizedEmail,
@@ -82,7 +101,6 @@ async function startServer() {
       });
 
       console.log("OTP sent to", normalizedEmail, ":", otp);
-
       return res.status(200).json({ message: "OTP sent" });
     } catch (error) {
       console.error(error);
@@ -102,14 +120,12 @@ async function startServer() {
       if (otps[normalizedEmail].otp !== otp.trim())
         return res.status(400).json({ message: "Invalid OTP" });
 
-      // Insert user
       const result = await users.insertOne({
         ...otps[normalizedEmail].userData,
         isVerified: true,
       });
 
       const user = await users.findOne({ _id: result.insertedId });
-
       delete otps[normalizedEmail];
 
       return res.status(200).json({
@@ -132,7 +148,6 @@ async function startServer() {
       const normalizedEmail = email.trim().toLowerCase();
 
       const user = await users.findOne({ email: normalizedEmail });
-
       if (!user || user.password !== password)
         return res.status(400).json({ message: "Invalid email or password" });
 
@@ -148,22 +163,19 @@ async function startServer() {
       return res.status(500).json({ message: "Server error" });
     }
   });
-  // ===================== SEND FORGOT PASSWORD OTP =====================
+
+  // ===================== FORGOT PASSWORD =====================
   app.post("/send-forgot-otp", async (req, res) => {
     try {
       const { email } = req.body;
       const normalizedEmail = email.trim().toLowerCase();
-
       const user = await users.findOne({ email: normalizedEmail });
-      if (!user) {
+      if (!user)
         return res.status(400).json({ message: "Email not registered" });
-      }
 
-      // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       otps[normalizedEmail] = { otp, email: normalizedEmail };
 
-      // Send OTP email
       await transporter.sendMail({
         from: '"BeadAura" <beadaura23@gmail.com>',
         to: normalizedEmail,
@@ -172,7 +184,6 @@ async function startServer() {
       });
 
       console.log("Forgot password OTP sent to", normalizedEmail, ":", otp);
-
       return res.status(200).json({ message: "OTP sent to your email" });
     } catch (error) {
       console.error(error);
@@ -182,23 +193,18 @@ async function startServer() {
     }
   });
 
-  // ===================== VERIFY FORGOT PASSWORD OTP =====================
   app.post("/verify-forgot-otp", async (req, res) => {
     try {
       const { email, otp } = req.body;
       const normalizedEmail = email.trim().toLowerCase();
 
-      if (!otps[normalizedEmail]) {
+      if (!otps[normalizedEmail])
         return res.status(400).json({ message: "No OTP found for this email" });
-      }
 
-      if (otps[normalizedEmail].otp !== otp.trim()) {
+      if (otps[normalizedEmail].otp !== otp.trim())
         return res.status(400).json({ message: "Invalid OTP" });
-      }
 
-      // OTP is valid, remove it
       delete otps[normalizedEmail];
-
       return res.status(200).json({ message: "OTP verified" });
     } catch (err) {
       console.error(err);
@@ -206,29 +212,18 @@ async function startServer() {
     }
   });
 
-  // ===================== RESET PASSWORD =====================
   app.post("/reset-password", async (req, res) => {
     try {
       const { email, newPassword } = req.body;
       const normalizedEmail = email.trim().toLowerCase();
 
-      // Find the user first
       const user = await users.findOne({ email: normalizedEmail });
-      if (!user) {
-        console.log("Email not found in DB:", normalizedEmail);
-        return res.status(400).json({ message: "Email not found" });
-      }
+      if (!user) return res.status(400).json({ message: "Email not found" });
 
-      console.log("Current user password:", user.password);
-
-      // Update password
-      const result = await users.updateOne(
+      await users.updateOne(
         { email: normalizedEmail },
         { $set: { password: newPassword } }
       );
-
-      console.log("Update result:", result);
-
       return res.status(200).json({ message: "Password updated successfully" });
     } catch (err) {
       console.error(err);
@@ -238,8 +233,98 @@ async function startServer() {
     }
   });
 
+  // ===================== ADD PRODUCT =====================
+  app.post("/add-product", upload.single("image"), async (req, res) => {
+    try {
+      const { sellerId, productName, description, category, price } = req.body;
+      if (!sellerId || !productName || !price)
+        return res.status(400).json({ message: "Missing required fields" });
+
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+
+      const result = await products.insertOne({
+        sellerId,
+        productName,
+        description,
+        category,
+        price,
+        imageUrl,
+        createdAt: new Date(),
+      });
+
+      return res
+        .status(200)
+        .json({ message: "Product added", productId: result.insertedId });
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: "Server error", error: err.toString() });
+    }
+  });
+
+  // ===================== GET PRODUCTS BY SELLER =====================
+  app.get("/get-products/:sellerId", async (req, res) => {
+    try {
+      const { sellerId } = req.params;
+
+      // Ensure sellerId is a string (matches what is stored in products)
+      const sellerProducts = await products
+        .find({ sellerId: sellerId }) // filter by the seller
+        .toArray();
+
+      return res.status(200).json({ products: sellerProducts });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  // ===================== DELETE PRODUCT =====================
+  app.delete("/delete-product/:productId", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      await products.deleteOne({ _id: new ObjectId(productId) });
+      return res.status(200).json({ message: "Product deleted successfully" });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  // ===================== UPDATE PRODUCT =====================
+
+  app.put(
+    "/update-product/:productId",
+    upload.single("image"),
+    async (req, res) => {
+      try {
+        const { productId } = req.params;
+        const { productName, description, category, price } = req.body;
+
+        const updateData = {};
+        if (productName) updateData.productName = productName;
+        if (description) updateData.description = description;
+        if (category) updateData.category = category;
+        if (price) updateData.price = price;
+        if (req.file) updateData.imageUrl = `/uploads/${req.file.filename}`;
+
+        await products.updateOne(
+          { _id: new ObjectId(productId) },
+          { $set: updateData }
+        );
+        return res
+          .status(200)
+          .json({ message: "Product updated successfully" });
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
+      }
+    }
+  );
+
   // Start server
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, "0.0.0.0", () =>
+    console.log(`Server running on port ${PORT}`)
+  );
 }
 
 startServer();

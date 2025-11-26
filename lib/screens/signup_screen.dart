@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/colors.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'seller_home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -82,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           try {
                             var url = Uri.parse(
-                              'http://localhost:3000/verify-otp',
+                              'http://192.168.1.7:3000/verify-otp',
                             );
                             var response = await http.post(
                               url,
@@ -158,7 +159,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => loading = true);
 
-    var url = Uri.parse('http://localhost:3000/signup');
+    var url = Uri.parse('http://192.168.1.7:3000/signup');
     var bodyData = {
       "name": nameController.text.trim(),
       "email": emailController.text.trim(),
@@ -194,9 +195,21 @@ class _SignupScreenState extends State<SignupScreen> {
           await prefs.setString("userName", otpResult["name"]);
 
           if (!mounted) return;
+
+          String userRole = otpResult["role"];
+
+          Widget nextScreen;
+
+          if (userRole == "seller") {
+            nextScreen =
+                const SellerHomeScreen(); // *** send sellers to SellerHomeScreen ***
+          } else {
+            nextScreen = HomeScreen(); // customers go to HomeScreen
+          }
+
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
+            MaterialPageRoute(builder: (_) => nextScreen),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
