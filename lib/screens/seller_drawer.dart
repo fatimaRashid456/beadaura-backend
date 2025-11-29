@@ -3,6 +3,7 @@ import 'add_product_screen.dart';
 import 'my_products_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
+import 'seller_profile_screen.dart';
 
 class SellerDrawer extends StatelessWidget {
   const SellerDrawer({super.key});
@@ -52,7 +53,13 @@ class SellerDrawer extends StatelessWidget {
               );
             }),
 
-            drawerTile("My Shop", () {}),
+            drawerTile("My Shop", () {
+              Navigator.pop(context); // close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerProfileScreen()),
+              );
+            }),
             drawerTile("Orders Received", () {}),
             drawerTile("Earnings / Stats", () {}),
             drawerTile("Logout", () async {

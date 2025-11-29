@@ -283,13 +283,30 @@ async function startServer() {
   app.delete("/delete-product/:productId", async (req, res) => {
     try {
       const { productId } = req.params;
+
+      // Find the product first
+      const product = await products.findOne({ _id: new ObjectId(productId) });
+      if (!product)
+        return res.status(404).json({ message: "Product not found" });
+
+      // Delete the image file if it exists
+      if (product.imageUrl) {
+        const imagePath = path.join(__dirname, product.imageUrl);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath); // delete file
+        }
+      }
+
+      // Delete product from database
       await products.deleteOne({ _id: new ObjectId(productId) });
+
       return res.status(200).json({ message: "Product deleted successfully" });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Server error" });
     }
   });
+
   // ===================== UPDATE PRODUCT =====================
 
   app.put(
@@ -320,6 +337,115 @@ async function startServer() {
       }
     }
   );
+  // ===================== GET SELLER DETAILS =====================
+  app.get("/get-seller/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      const user = await users.findOne({ _id: new ObjectId(userId) });
+
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      return res.status(200).json({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        cnic: user.cnic || "",
+        bankName: user.bankName || "",
+        bankAccount: user.bankAccount || "",
+        shopName: user.shopName || "",
+        imageUrl: user.imageUrl || "",
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  // ===================== UPDATE SELLER PROFILE =====================
+  app.put(
+    "/update-seller/:userId",
+    upload.single("image"), // image is optional
+    async (req, res) => {
+      try {
+        const { userId } = req.params;
+        const { name, shopName, cnic, bankName, bankAccount } = req.body;
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (shopName) updateData.shopName = shopName;
+        if (cnic) updateData.cnic = cnic;
+        if (bankName) updateData.bankName = bankName;
+        if (bankAccount) updateData.bankAccount = bankAccount;
+
+        // Handle profile image
+        if (req.file) {
+          const imageUrl = `/uploads/${req.file.filename}`;
+          updateData.imageUrl = imageUrl;
+
+          // Optional: delete old image
+          const user = await users.findOne({ _id: new ObjectId(userId) });
+          if (user?.imageUrl) {
+            const oldImagePath = path.join(__dirname, user.imageUrl);
+            if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+          }
+        }
+
+        await users.updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: updateData }
+        );
+
+        const updatedUser = await users.findOne({ _id: new ObjectId(userId) });
+
+        return res.status(200).json({
+          message: "Profile updated successfully",
+          user: {
+            name: updatedUser.name,
+            shopName: updatedUser.shopName,
+            cnic: updatedUser.cnic || "",
+            bankName: updatedUser.bankName || "",
+            bankAccount: updatedUser.bankAccount || "",
+            imageUrl: updatedUser.imageUrl || "",
+          },
+        });
+      } catch (err) {
+        console.error(err);
+        return res
+          .status(500)
+          .json({ message: "Server error", error: err.toString() });
+      }
+    }
+  );
+  // ===================== GET ALL PRODUCTS =====================
+  // ===================== GET ALL PRODUCTS WITH STORE INFO =====================
+  app.get("/get-products", async (req, res) => {
+    try {
+      const allProducts = await products.find({}).toArray();
+
+      // Add store info to each product
+      const productsWithStore = await Promise.all(
+        allProducts.map(async (product) => {
+          const seller = await users.findOne({
+            _id: new ObjectId(product.sellerId),
+          });
+          return {
+            ...product,
+            store: seller
+              ? {
+                  _id: seller._id.toString(),
+                  name: seller.shopName || seller.name,
+                }
+              : {},
+          };
+        })
+      );
+
+      return res.status(200).json({ products: productsWithStore });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
 
   // Start server
   app.listen(PORT, "0.0.0.0", () =>
