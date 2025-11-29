@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/colors.dart';
 import 'store_products_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -73,8 +74,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 width: double.infinity,
                 color: Colors.grey.shade200,
                 child:
-                    product['imageUrl'] != null &&
-                        product['imageUrl'].toString().isNotEmpty
+                    (product['imageUrl'] != null &&
+                        product['imageUrl'].toString().isNotEmpty)
                     ? Image.network(
                         "http://192.168.1.7:3000${product['imageUrl']}",
                         fit: BoxFit.cover,
@@ -124,13 +125,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           MaterialPageRoute(
                             builder: (context) => StoreProductsScreen(
                               sellerId:
-                                  widget.product['sellerId'], // MUST match DB
+                                  widget.product['sellerId'], // Must match DB
                               storeName: store?['name'] ?? 'Store',
                             ),
                           ),
                         );
                       },
-
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 20),
@@ -167,8 +167,48 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         backgroundColor: AppColors.lavenderDark,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
-                      onPressed: () {
-                        // Add to Cart Logic
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final userId = prefs.getString('userId');
+
+                        if (userId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please log in first"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        try {
+                          final url = Uri.parse(
+                            "http://192.168.1.7:3000/add-to-cart",
+                          );
+                          final response = await http.post(
+                            url,
+                            headers: {"Content-Type": "application/json"},
+                            body: jsonEncode({
+                              "userId": userId,
+                              "product": product,
+                            }),
+                          );
+
+                          if (response.statusCode == 200) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Added to cart")),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Failed to add to cart"),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                        }
                       },
                       child: const Text("Add to Cart"),
                     ),
@@ -182,6 +222,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                       onPressed: () {
                         // Order Now Logic
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Order Now tapped")),
+                        );
                       },
                       child: const Text("Order Now"),
                     ),

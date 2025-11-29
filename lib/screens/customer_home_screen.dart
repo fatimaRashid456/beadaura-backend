@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/colors.dart';
 import 'search_screen.dart';
 import 'product_details_screen.dart';
+import 'cart_screen.dart'; // Updated cart screen
 
 // Categories list
 List<String> categories = [
@@ -27,13 +29,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   bool loading = true;
   int _selectedIndex = 0;
   String? _selectedCategory;
+  String? userId; // logged-in user ID
 
   final String serverUrl = "http://192.168.1.7:3000/get-products";
 
   @override
   void initState() {
     super.initState();
+    loadUserId();
     fetchProducts();
+  }
+
+  Future<void> loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('userId');
+    });
   }
 
   Future<void> fetchProducts() async {
@@ -70,8 +81,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // Home page with products
+  Widget buildHomePage() {
     final displayedProducts = _selectedCategory == null
         ? products
         : products
@@ -82,151 +93,170 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               )
               .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: CustomScrollView(
-        slivers: [
-          // HEADER
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.only(
-                top: 45,
-                left: 20,
-                right: 20,
-                bottom: 20,
+    return CustomScrollView(
+      slivers: [
+        // HEADER
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.only(
+              top: 45,
+              left: 20,
+              right: 20,
+              bottom: 20,
+            ),
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: AppColors.lavenderMedium,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
               ),
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.lavenderMedium,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(25),
-                  bottomRight: Radius.circular(25),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Welcome, Customer",
+                  style: TextStyle(
+                    fontSize: 22,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Welcome, Customer",
-                    style: TextStyle(
-                      fontSize: 22,
+                const SizedBox(height: 15),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    decoration: BoxDecoration(
                       color: AppColors.white,
-                      fontWeight: FontWeight.bold,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  const SizedBox(height: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SearchScreen(),
+                    height: 50,
+                    child: const Row(
+                      children: [
+                        Icon(Icons.search, color: AppColors.lavenderDark),
+                        SizedBox(width: 10),
+                        Text(
+                          "Search",
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
                         ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      height: 50,
-                      child: const Row(
-                        children: [
-                          Icon(Icons.search, color: AppColors.lavenderDark),
-                          SizedBox(width: 10),
-                          Text(
-                            "Search",
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 5)),
-
-          // CATEGORIES
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 33,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  final isSelected = _selectedCategory == category;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = isSelected
-                            ? null
-                            : category; // toggle
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.lavenderLight
-                            : AppColors.lavenderDark,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        category,
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // PRODUCTS GRID
-          loading
-              ? const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : displayedProducts.isEmpty
-              ? SliverFillRemaining(
-                  child: Center(
-                    child: Text(
-                      "No products available",
-                      style: TextStyle(fontSize: 18, color: AppColors.black),
-                    ),
-                  ),
-                )
-              : SliverPadding(
-                  padding: const EdgeInsets.all(12),
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final product = displayedProducts[index];
-                      return ProductCard(product: product);
-                    }, childCount: displayedProducts.length),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.68,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
                   ),
                 ),
-        ],
-      ),
+              ],
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 5)),
+
+        // CATEGORIES
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 33,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isSelected = _selectedCategory == category;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = isSelected
+                          ? null
+                          : category; // toggle
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.lavenderLight
+                          : AppColors.lavenderDark,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      category,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        // PRODUCTS GRID
+        loading
+            ? const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : displayedProducts.isEmpty
+            ? SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    "No products available",
+                    style: TextStyle(fontSize: 18, color: AppColors.black),
+                  ),
+                ),
+              )
+            : SliverPadding(
+                padding: const EdgeInsets.all(12),
+                sliver: SliverGrid(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final product = displayedProducts[index];
+                    return ProductCard(product: product);
+                  }, childCount: displayedProducts.length),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                ),
+              ),
+      ],
+    );
+  }
+
+  Widget buildCartPage() {
+    if (userId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return CartScreen(userId: userId!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Pages for bottom navigation
+    List<Widget> pages = [
+      buildHomePage(), // Home
+      buildCartPage(), // Cart
+      Container(), // Orders placeholder
+      Container(), // Premium / Diamonds placeholder
+      Container(), // Profile placeholder
+    ];
+
+    return Scaffold(
+      body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.lavenderDark,

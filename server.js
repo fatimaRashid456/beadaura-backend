@@ -53,6 +53,7 @@ async function startServer() {
   const db = client.db("beadaura");
   const users = db.collection("users");
   const products = db.collection("products");
+  const Cart = db.collection("cart");
 
   await users.createIndex({ email: 1 }, { unique: true });
 
@@ -444,6 +445,52 @@ async function startServer() {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Server error" });
+    }
+  });
+  app.post("/add-to-cart", async (req, res) => {
+  try {
+    const { userId, product } = req.body;
+
+    if (!product) {
+      return res.status(400).json({ message: "Product data missing" });
+    }
+
+    const db = client.db("beadaura");
+    const cart = db.collection("cart");
+
+    await cart.insertOne({
+      userId: userId || null,   // store userId if provided, else null
+      product,
+      createdAt: new Date(),
+    });
+
+    return res.status(200).json({ message: "Added to cart" });
+  } catch (err) {
+    console.log("Cart error:", err);
+    return res.status(500).json({ message: "Failed to add to cart" });
+  }
+});
+
+
+  app.get("/cart/:userId", async (req, res) => {
+    try {
+      const cartItems = await Cart.find({
+        userId: req.params.userId,
+      }).toArray();
+      res.json({ cartItems });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+  // DELETE cart item
+  app.delete("/delete-cart-item/:cartItemId", async (req, res) => {
+    try {
+      const { cartItemId } = req.params;
+      await Cart.deleteOne({ _id: new ObjectId(cartItemId) });
+      res.status(200).json({ message: "Cart item removed" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
     }
   });
 

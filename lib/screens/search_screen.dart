@@ -226,18 +226,27 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child:
-                                product['imageUrl'] != null &&
-                                    product['imageUrl'].toString().isNotEmpty
-                                ? Image.network(
-                                    product['imageUrl'],
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.asset(
-                                    'assets/images/placeholder.png',
-                                    fit: BoxFit.cover,
-                                  ),
+                            child: Builder(
+                              builder: (_) {
+                                String imageUrl = product['imageUrl'] ?? "";
+
+                                // FIX URL
+                                if (imageUrl.startsWith("/uploads")) {
+                                  imageUrl = "http://192.168.1.7:3000$imageUrl";
+                                }
+
+                                print("LOADING IMAGE: $imageUrl");
+
+                                return imageUrl.isNotEmpty
+                                    ? Image.network(imageUrl, fit: BoxFit.cover)
+                                    : Image.asset(
+                                        'assets/images/placeholder.png',
+                                        fit: BoxFit.cover,
+                                      );
+                              },
+                            ),
                           ),
+
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(
