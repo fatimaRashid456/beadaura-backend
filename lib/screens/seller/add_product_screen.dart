@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});

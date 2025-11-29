@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 import 'search_screen.dart';
 import 'product_details_screen.dart';
 import 'cart_screen.dart'; // Updated cart screen

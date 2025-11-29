@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/colors.dart';
-import 'Customer_home_screen.dart';
+import '../../utils/colors.dart';
+import '../customer/customer_home_screen.dart';
 import 'login_screen.dart';
-import 'seller_home_screen.dart';
+import '../seller/seller_home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});

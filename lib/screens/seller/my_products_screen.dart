@@ -4,7 +4,7 @@ import 'add_product_screen.dart';
 import 'edit_product_screen.dart'; // new edit screen
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 
 class MyProductsScreen extends StatefulWidget {
   const MyProductsScreen({super.key});

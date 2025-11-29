@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../utils/colors.dart';
-import 'customer_home_screen.dart';
+import '../../utils/colors.dart';
+import '../customer/customer_home_screen.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 

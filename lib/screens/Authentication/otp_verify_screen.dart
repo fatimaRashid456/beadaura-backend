@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 import 'reset_password_screen.dart';
 
 class OTPVerifyScreen extends StatefulWidget {

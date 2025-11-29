@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/colors.dart';
-import 'screens/customer_home_screen.dart';
-import 'screens/seller_home_screen.dart';
-import 'screens/access_choice_screen.dart';
+import 'screens/customer/customer_home_screen.dart';
+import 'screens/seller/seller_home_screen.dart';
+import 'screens/Authentication/access_choice_screen.dart';
 
 void main() {
   runApp(MyApp());

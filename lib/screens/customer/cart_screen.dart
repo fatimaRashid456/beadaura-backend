@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'product_details_screen.dart';

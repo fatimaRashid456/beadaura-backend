@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/colors.dart';
+import '../../utils/colors.dart';
 import 'otp_verify_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
