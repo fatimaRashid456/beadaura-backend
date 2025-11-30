@@ -6,6 +6,7 @@ import '../../utils/colors.dart';
 import 'search_screen.dart';
 import 'product_details_screen.dart';
 import 'cart_screen.dart'; // Updated cart screen
+import 'customer_profile_screen.dart';
 
 // Categories list
 List<String> categories = [
@@ -252,7 +253,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       buildCartPage(), // Cart
       Container(), // Orders placeholder
       Container(), // Premium / Diamonds placeholder
-      Container(), // Profile placeholder
+      const CustomerProfileScreen(), // Profile placeholder
     ];
 
     return Scaffold(
@@ -286,7 +287,10 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = product['productName'] ?? '';
     final price = product['price']?.toString() ?? '';
-    final imageUrl = product['imageUrl'] ?? '';
+    final imageUrl =
+        (product['variants'] != null && product['variants'].isNotEmpty)
+        ? product['variants'][0]['imageUrl'] ?? ''
+        : '';
 
     return GestureDetector(
       onTap: () {

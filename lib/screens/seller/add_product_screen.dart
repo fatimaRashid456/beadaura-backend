@@ -13,13 +13,25 @@ class AddProductScreen extends StatefulWidget {
   State<AddProductScreen> createState() => _AddProductScreenState();
 }
 
+// Model to store color and its image
+class ColorVariant {
+  String color;
+  File? image;
+
+  ColorVariant({required this.color, this.image});
+}
+
 class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController stockController = TextEditingController();
+  final TextEditingController highlightsController = TextEditingController();
+  final TextEditingController skuController = TextEditingController();
+  final TextEditingController sizeController = TextEditingController();
+  final TextEditingController materialController = TextEditingController();
 
   bool loading = false;
-  File? selectedImage;
   String? selectedCategory;
 
   final List<String> categories = [
@@ -31,27 +43,44 @@ class _AddProductScreenState extends State<AddProductScreen> {
     "Custom",
   ];
 
-  Future pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        selectedImage = File(picked.path);
-      });
+  // List of color variants
+  List<ColorVariant> variants = [ColorVariant(color: '')];
+
+  // Pick image for a specific variant
+  Future<void> pickImage(int index) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        setState(() {
+          variants[index].image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error picking image: $e")));
     }
   }
 
+  // Add product API call
   Future<void> addProduct() async {
-    if (selectedImage == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please select an image")));
-      return;
-    }
-    if (selectedCategory == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please select a category")));
+    // Validate fields
+    if (nameController.text.trim().isEmpty ||
+        descriptionController.text.trim().isEmpty ||
+        priceController.text.trim().isEmpty ||
+        stockController.text.trim().isEmpty ||
+        highlightsController.text.trim().isEmpty ||
+        skuController.text.trim().isEmpty ||
+        sizeController.text.trim().isEmpty ||
+        materialController.text.trim().isEmpty ||
+        selectedCategory == null ||
+        variants.any((v) => v.color.trim().isEmpty || v.image == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all fields and add color/image"),
+        ),
+      );
       return;
     }
 
@@ -65,14 +94,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
       "POST",
       Uri.parse("http://192.168.1.7:3000/add-product"),
     );
-    request.fields["sellerId"] = sellerId;
-    request.fields["productName"] = nameController.text.trim();
-    request.fields["description"] = descriptionController.text.trim();
-    request.fields["category"] = selectedCategory!;
-    request.fields["price"] = priceController.text.trim();
-    request.files.add(
-      await http.MultipartFile.fromPath("image", selectedImage!.path),
-    );
+
+    // Add basic product info
+    request.fields.addAll({
+      "sellerId": sellerId,
+      "productName": nameController.text.trim(),
+      "description": descriptionController.text.trim(),
+      "category": selectedCategory!,
+      "price": priceController.text.trim(),
+      "stock": stockController.text.trim(),
+      "highlights": highlightsController.text.trim(),
+      "sku": skuController.text.trim(),
+      "size": sizeController.text.trim(),
+      "material": materialController.text.trim(),
+    });
+
+    // Add color variants and images
+    for (int i = 0; i < variants.length; i++) {
+      request.fields['colors[$i]'] = variants[i].color;
+      if (variants[i].image != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'images', // backend expects 'images' as the key
+            variants[i].image!.path,
+          ),
+        );
+      }
+    }
 
     try {
       var streamedResponse = await request.send();
@@ -85,9 +133,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
         Navigator.pop(context);
       } else {
         var data = jsonDecode(response.body);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(data["message"] ?? "Error")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data["message"] ?? "Something went wrong")),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -104,7 +152,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       backgroundColor: AppColors.white,
       body: Column(
         children: [
-          // Gradient Header with Back Arrow
+          // Header
           Container(
             padding: const EdgeInsets.only(
               top: 50,
@@ -147,48 +195,34 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
           ),
 
-          // Form with constraints
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  label("Product Image"),
-                  GestureDetector(
-                    onTap: pickImage,
-                    child: Container(
-                      height: 160,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.lavenderLight.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: selectedImage != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.file(
-                                selectedImage!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Center(
-                              child: Icon(
-                                Icons.add,
-                                color: Colors.grey,
-                                size: 35,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
                   label("Product Name"),
-                  inputField(nameController),
+                  inputField(nameController, "e.g., Pearl Bracelet"),
                   const SizedBox(height: 20),
 
                   label("Description"),
-                  inputField(descriptionController),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    decoration: BoxDecoration(
+                      color: AppColors.lavenderLight.withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      controller: descriptionController,
+                      maxLines: 8,
+                      keyboardType: TextInputType.multiline,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Enter detailed description (max 250 words)",
+                        hintStyle: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   label("Category"),
@@ -203,18 +237,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       isExpanded: true,
                       underline: const SizedBox(),
                       dropdownColor: Colors.white,
-                      hint: const Text("Choose a Category"),
+                      hint: const Text(
+                        "Choose a Category",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       items: categories
                           .map(
                             (cat) =>
                                 DropdownMenuItem(value: cat, child: Text(cat)),
                           )
                           .toList(),
-                      onChanged: (v) {
-                        setState(() {
-                          selectedCategory = v;
-                        });
-                      },
+                      onChanged: (v) => setState(() => selectedCategory = v),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -222,9 +255,89 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   label("Price"),
                   inputField(
                     priceController,
+                    "Enter price in USD",
                     keyboardType: TextInputType.number,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
+
+                  label("Stock"),
+                  inputField(
+                    stockController,
+                    "Enter stock quantity",
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 20),
+
+                  label("Highlights"),
+                  inputField(
+                    highlightsController,
+                    "e.g., Handmade, Adjustable Size",
+                  ),
+                  const SizedBox(height: 20),
+
+                  label("SKU"),
+                  inputField(skuController, "Enter unique SKU, e.g., BR-001"),
+                  const SizedBox(height: 20),
+
+                  label("Size"),
+                  inputField(
+                    sizeController,
+                    "Enter size (e.g., 7 inches or W10xL5cm)",
+                  ),
+                  const SizedBox(height: 20),
+
+                  label("Material"),
+                  inputField(materialController, "e.g., Pearl, Leather"),
+                  const SizedBox(height: 20),
+
+                  label("Color Variants"),
+                  ...variants.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    ColorVariant variant = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: inputField(
+                              TextEditingController(text: variant.color),
+                              "Enter color",
+                              onChanged: (v) => variant.color = v,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => pickImage(index),
+                            child: Container(
+                              height: 50,
+                              width: 50,
+                              decoration: BoxDecoration(
+                                color: AppColors.lavenderLight.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(12),
+                                image: variant.image != null
+                                    ? DecorationImage(
+                                        image: FileImage(variant.image!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: variant.image == null
+                                  ? const Icon(Icons.add, color: Colors.grey)
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+
+                  TextButton.icon(
+                    onPressed: () =>
+                        setState(() => variants.add(ColorVariant(color: ''))),
+                    icon: const Icon(Icons.add),
+                    label: const Text("Add Color Variant"),
+                  ),
+                  const SizedBox(height: 30),
 
                   SizedBox(
                     width: double.infinity,
@@ -270,8 +383,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget inputField(
-    TextEditingController controller, {
+    TextEditingController controller,
+    String hintText, {
     TextInputType keyboardType = TextInputType.text,
+    Function(String)? onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -282,9 +397,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        decoration: const InputDecoration(
+        onChanged: onChanged,
+        decoration: InputDecoration(
           border: InputBorder.none,
-          hintStyle: TextStyle(color: Colors.black26),
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.grey),
         ),
       ),
     );

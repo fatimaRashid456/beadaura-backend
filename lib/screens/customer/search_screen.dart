@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'product_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -161,14 +162,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   }
 
   void filterProducts(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        filteredProducts = allProducts;
-        loading = false;
-      });
-      return;
-    }
-
     final lowerQuery = query.toLowerCase().trim();
     final queryWords = lowerQuery.split(RegExp(r'\s+'));
 
@@ -176,10 +169,43 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       filteredProducts = allProducts.where((product) {
         final name = (product['productName'] ?? '').toLowerCase();
         final desc = (product['description'] ?? '').toLowerCase();
-        return queryWords.any(
-          (word) => name.contains(word) || desc.contains(word),
+        final highlights = (product['highlights'] ?? '').toLowerCase();
+
+        bool matchesProductFields = queryWords.any(
+          (word) =>
+              name.contains(word) ||
+              desc.contains(word) ||
+              highlights.contains(word),
         );
+
+        Map<String, dynamic>? matchedVariant;
+
+        // Check variants for match
+        if (product['variants'] != null) {
+          for (var variant in product['variants']) {
+            final variantName = (variant['variantName'] ?? '').toLowerCase();
+            final variantColor = (variant['color'] ?? '').toLowerCase();
+
+            if (queryWords.any(
+              (word) =>
+                  variantName.contains(word) || variantColor.contains(word),
+            )) {
+              matchedVariant = variant;
+              break;
+            }
+          }
+        }
+
+        // Attach selectedVariant to product for image display
+        product['selectedVariant'] =
+            matchedVariant ??
+            (product['variants'] != null && product['variants'].isNotEmpty
+                ? product['variants'][0]
+                : null);
+
+        return matchesProductFields || matchedVariant != null;
       }).toList();
+
       loading = false;
     });
   }
@@ -213,9 +239,25 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 ),
                 itemBuilder: (context, index) {
                   final product = filteredProducts[index];
+                  String imageUrl = '';
+
+                  if (product['selectedVariant'] != null) {
+                    imageUrl = product['selectedVariant']['imageUrl'] ?? '';
+                  }
+
+                  if (imageUrl.startsWith("/uploads")) {
+                    imageUrl = "http://192.168.1.7:3000$imageUrl";
+                  }
+
                   return GestureDetector(
                     onTap: () {
-                      // TODO: Navigate to product details
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ProductDetailsScreen(product: product),
+                        ),
+                      );
                     },
                     child: Card(
                       elevation: 3,
@@ -226,27 +268,20 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: Builder(
-                              builder: (_) {
-                                String imageUrl = product['imageUrl'] ?? "";
-
-                                // FIX URL
-                                if (imageUrl.startsWith("/uploads")) {
-                                  imageUrl = "http://192.168.1.7:3000$imageUrl";
-                                }
-
-                                print("LOADING IMAGE: $imageUrl");
-
-                                return imageUrl.isNotEmpty
-                                    ? Image.network(imageUrl, fit: BoxFit.cover)
-                                    : Image.asset(
-                                        'assets/images/placeholder.png',
-                                        fit: BoxFit.cover,
-                                      );
-                              },
-                            ),
+                            child: imageUrl.isNotEmpty
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Image.asset(
+                                      'assets/images/placeholder.png',
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    'assets/images/placeholder.png',
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
-
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(

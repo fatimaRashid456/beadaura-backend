@@ -100,10 +100,11 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                       children: [
                         Expanded(
                           child:
-                              product['imageUrl'] != null &&
-                                  product['imageUrl'].toString().isNotEmpty
+                              (product['variants'] != null &&
+                                  product['variants'].isNotEmpty &&
+                                  product['variants'][0]['imageUrl'] != null)
                               ? Image.network(
-                                  "http://192.168.1.7:3000${product['imageUrl']}",
+                                  "http://192.168.1.7:3000${product['variants'][0]['imageUrl']}",
                                   fit: BoxFit.cover,
                                 )
                               : Image.asset(
@@ -111,6 +112,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   fit: BoxFit.cover,
                                 ),
                         ),
+
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Column(

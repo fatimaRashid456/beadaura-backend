@@ -234,14 +234,52 @@ async function startServer() {
     }
   });
 
-  // ===================== ADD PRODUCT =====================
-  app.post("/add-product", upload.single("image"), async (req, res) => {
+  // Add product
+  app.post("/add-product", upload.array("images", 10), async (req, res) => {
     try {
-      const { sellerId, productName, description, category, price } = req.body;
-      if (!sellerId || !productName || !price)
-        return res.status(400).json({ message: "Missing required fields" });
+      const {
+        sellerId,
+        productName,
+        description,
+        category,
+        price,
+        size,
+        material,
+        stock,
+        highlights,
+        sku,
+      } = req.body;
 
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+      const colors = Array.isArray(req.body.colors)
+        ? req.body.colors
+        : [req.body.colors];
+
+      if (
+        !sellerId ||
+        !productName ||
+        !description ||
+        !category ||
+        !price ||
+        !size ||
+        !material ||
+        !stock ||
+        !highlights ||
+        !sku ||
+        !colors ||
+        colors.some((c) => !c)
+      ) {
+        return res.status(400).json({ message: "Missing mandatory fields" });
+      }
+
+      const variants = colors.map((color, index) => ({
+        color,
+        imageUrl: req.files[index]
+          ? `/uploads/${req.files[index].filename}`
+          : null,
+      }));
+
+      // Set outOfStock
+      const outOfStock = Number(stock) <= 0;
 
       const result = await products.insertOne({
         sellerId,
@@ -249,7 +287,13 @@ async function startServer() {
         description,
         category,
         price,
-        imageUrl,
+        size,
+        material,
+        stock,
+        highlights,
+        sku,
+        outOfStock,
+        variants,
         createdAt: new Date(),
       });
 
@@ -281,30 +325,47 @@ async function startServer() {
     }
   });
   // ===================== DELETE PRODUCT =====================
+  // ===================== DELETE PRODUCT (Merged) =====================
   app.delete("/delete-product/:productId", async (req, res) => {
     try {
       const { productId } = req.params;
 
       // Find the product first
       const product = await products.findOne({ _id: new ObjectId(productId) });
-      if (!product)
+      if (!product) {
         return res.status(404).json({ message: "Product not found" });
+      }
 
-      // Delete the image file if it exists
-      if (product.imageUrl) {
-        const imagePath = path.join(__dirname, product.imageUrl);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath); // delete file
+      // Delete all images in variants
+      if (product.variants && product.variants.length > 0) {
+        for (const v of product.variants) {
+          if (v.imageUrl) {
+            const imagePath = path.join(
+              __dirname,
+              v.imageUrl.replace(/^\//, "")
+            );
+            if (fs.existsSync(imagePath)) {
+              await fs.promises.unlink(imagePath);
+              console.log("Deleted:", imagePath);
+            }
+          }
         }
       }
 
-      // Delete product from database
+      // Delete product from collection
       await products.deleteOne({ _id: new ObjectId(productId) });
 
-      return res.status(200).json({ message: "Product deleted successfully" });
+      // Delete all cart items containing this product
+      await Cart.deleteMany({ productId: productId });
+
+      return res.status(200).json({
+        message: "Product deleted successfully and removed from all carts",
+      });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ message: "Server error" });
+      return res
+        .status(500)
+        .json({ message: "Server error", error: err.toString() });
     }
   });
 
@@ -312,32 +373,64 @@ async function startServer() {
 
   app.put(
     "/update-product/:productId",
-    upload.single("image"),
+    upload.array("images", 10),
     async (req, res) => {
       try {
         const { productId } = req.params;
-        const { productName, description, category, price } = req.body;
+        const {
+          productName,
+          description,
+          category,
+          price,
+          size,
+          material,
+          stock,
+          highlights,
+          sku,
+          colors,
+        } = req.body;
 
         const updateData = {};
         if (productName) updateData.productName = productName;
         if (description) updateData.description = description;
         if (category) updateData.category = category;
         if (price) updateData.price = price;
-        if (req.file) updateData.imageUrl = `/uploads/${req.file.filename}`;
+        if (size) updateData.size = size;
+        if (material) updateData.material = material;
+        if (stock !== undefined) {
+          updateData.stock = stock;
+          updateData.outOfStock = Number(stock) <= 0; // mark as out-of-stock if stock is 0
+        }
+        if (highlights) updateData.highlights = highlights;
+        if (sku) updateData.sku = sku;
+
+        if (req.files && req.files.length > 0 && colors) {
+          const colorArr = Array.isArray(colors) ? colors : [colors];
+          updateData.variants = colorArr.map((color, index) => ({
+            color,
+            imageUrl: req.files[index]
+              ? `/uploads/${req.files[index].filename}`
+              : null,
+          }));
+        }
 
         await products.updateOne(
           { _id: new ObjectId(productId) },
           { $set: updateData }
         );
+
         return res
           .status(200)
           .json({ message: "Product updated successfully" });
       } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res
+          .status(500)
+          .json({ message: "Server error", error: err.toString() });
       }
     }
   );
+
   // ===================== GET SELLER DETAILS =====================
   app.get("/get-seller/:userId", async (req, res) => {
     try {
@@ -447,50 +540,113 @@ async function startServer() {
       return res.status(500).json({ message: "Server error" });
     }
   });
-  app.post("/add-to-cart", async (req, res) => {
-  try {
-    const { userId, product } = req.body;
-
-    if (!product) {
-      return res.status(400).json({ message: "Product data missing" });
-    }
-
-    const db = client.db("beadaura");
-    const cart = db.collection("cart");
-
-    await cart.insertOne({
-      userId: userId || null,   // store userId if provided, else null
-      product,
-      createdAt: new Date(),
-    });
-
-    return res.status(200).json({ message: "Added to cart" });
-  } catch (err) {
-    console.log("Cart error:", err);
-    return res.status(500).json({ message: "Failed to add to cart" });
-  }
-});
-
-
-  app.get("/cart/:userId", async (req, res) => {
+  // Toggle Out of Stock
+  app.put("/toggle-out-of-stock/:productId", async (req, res) => {
     try {
-      const cartItems = await Cart.find({
-        userId: req.params.userId,
-      }).toArray();
-      res.json({ cartItems });
+      const { productId } = req.params;
+      const { outOfStock } = req.body; // expects boolean
+
+      await products.updateOne(
+        { _id: new ObjectId(productId) },
+        { $set: { outOfStock } }
+      );
+
+      return res.status(200).json({ message: "Product stock status updated" });
     } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
     }
   });
-  // DELETE cart item
+
+  app.post("/add-to-cart", async (req, res) => {
+    try {
+      const { userId, product } = req.body;
+
+      if (!product) {
+        return res.status(400).json({ message: "Product data missing" });
+      }
+
+      const db = client.db("beadaura");
+      const cart = db.collection("cart");
+
+      await cart.insertOne({
+        userId: userId || null, // store userId if provided, else null
+        productId: product._id.toString(),
+        product: product,
+        createdAt: new Date(),
+      });
+
+      return res.status(200).json({ message: "Added to cart" });
+    } catch (err) {
+      console.log("Cart error:", err);
+      return res.status(500).json({ message: "Failed to add to cart" });
+    }
+  });
+
+  app.get("/cart/:userId", async (req, res) => {
+    const { userId } = req.params;
+    const cartItems = await Cart.find({ userId }).toArray();
+
+    const cartWithProducts = await Promise.all(
+      cartItems.map(async (item) => {
+        let product = await products.findOne({
+          _id: new ObjectId(item.productId),
+        });
+
+        // If product is deleted, create placeholder
+        if (!product) {
+          product = {
+            _id: item.productId,
+            productName: "Deleted Product",
+            price: 0,
+            outOfStock: true,
+            variants: [],
+          };
+        }
+
+        return { ...item, product };
+      })
+    );
+
+    res.status(200).json({ cartItems: cartWithProducts });
+  });
+
+  app.get("/get-user/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const user = await client
+        .db("beadaura")
+        .collection("users")
+        .findOne({ _id: new ObjectId(id) });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.status(200).json({ user });
+    } catch (err) {
+      res.status(500).json({ message: "Error fetching user data", error: err });
+    }
+  });
+  // DELETE CART ITEM
   app.delete("/delete-cart-item/:cartItemId", async (req, res) => {
     try {
       const { cartItemId } = req.params;
-      await Cart.deleteOne({ _id: new ObjectId(cartItemId) });
-      res.status(200).json({ message: "Cart item removed" });
+      const cartCollection = client.db("beadaura").collection("cart");
+
+      const result = await cartCollection.deleteOne({
+        _id: new ObjectId(cartItemId),
+      });
+
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ message: "Cart item not found" });
+      }
+
+      res.status(200).json({ message: "Cart item deleted successfully" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Server error", error: err.toString() });
     }
   });
 

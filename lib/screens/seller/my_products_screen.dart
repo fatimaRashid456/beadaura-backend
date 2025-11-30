@@ -78,6 +78,28 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 
+  Future<void> toggleProductStatus(String productId, bool status) async {
+    try {
+      var response = await http.put(
+        Uri.parse("http://192.168.1.7:3000/toggle-product/$productId"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"active": status}),
+      );
+
+      if (response.statusCode != 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to update product status")),
+        );
+        fetchProducts(); // revert toggle
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      fetchProducts(); // revert toggle
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,6 +129,11 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
               itemCount: products.length,
               itemBuilder: (context, index) {
                 var product = products[index];
+                bool isActive =
+                    !(product["outOfStock"] == true ||
+                        product["outOfStock"] == 'true' ||
+                        product["outOfStock"] == 1);
+
                 return Container(
                   margin: const EdgeInsets.only(bottom: 15),
                   padding: const EdgeInsets.all(15),
@@ -200,6 +227,42 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                 ),
                               );
                               if (confirm) deleteProduct(product['_id']);
+                            },
+                          ),
+                          // Toggle button
+                          Switch(
+                            value:
+                                !isActive, // or however you define the toggle
+                            onChanged: (value) async {
+                              bool newOutOfStock =
+                                  value; // true if out of stock
+                              try {
+                                var response = await http.put(
+                                  Uri.parse(
+                                    "http://192.168.1.7:3000/toggle-out-of-stock/${product['_id']}",
+                                  ),
+                                  headers: {"Content-Type": "application/json"},
+                                  body: jsonEncode({
+                                    "outOfStock": newOutOfStock,
+                                  }),
+                                );
+
+                                if (response.statusCode == 200) {
+                                  fetchProducts(); // refresh list
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Failed to update product status",
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Error: $e")),
+                                );
+                              }
                             },
                           ),
                         ],
