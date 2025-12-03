@@ -20,14 +20,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ezza-Fatima818/Customized-beaded-jewellery-appp.git"
+    "url": "git+https://github.com/fatimaRashid456/beadaura-backend.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Ezza-Fatima818/Customized-beaded-jewellery-appp/issues"
+    "url": "https://github.com/fatimaRashid456/beadaura-backend/issues"
   },
-  "homepage": "https://github.com/Ezza-Fatima818/Customized-beaded-jewellery-appp#readme"
+  "homepage": "https://github.com/fatimaRashid456/beadaura-backend#readme"
 }
