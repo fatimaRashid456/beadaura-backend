@@ -32,7 +32,6 @@ const upload = multer({ storage });
 const uri =
   "mongodb+srv://fatimarashid312_db_user:b3uuBaZyml7B3u0f@cluster0.pvmvetz.mongodb.net/beadaura?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
-const PORT = 3000;
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -649,7 +648,7 @@ async function startServer() {
       res.status(500).json({ message: "Server error", error: err.toString() });
     }
   });
-
+  const PORT = process.env.PORT || 3000;
   // Start server
   app.listen(PORT, "0.0.0.0", () =>
     console.log(`Server running on port ${PORT}`)
