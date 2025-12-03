@@ -21,7 +21,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     try {
       var response = await http.post(
-        Uri.parse("http://192.168.1.7:3000/reset-password"),
+        Uri.parse("http://beadaura-backend.onrender.com/reset-password"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "email": widget.email,

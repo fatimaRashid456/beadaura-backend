@@ -32,7 +32,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   String? _selectedCategory;
   String? userId; // logged-in user ID
 
-  final String serverUrl = "http://192.168.1.7:3000/get-products";
+  final String serverUrl = "http://beadaura-backend.onrender.com/get-products";
 
   @override
   void initState() {
@@ -318,7 +318,7 @@ class ProductCard extends StatelessWidget {
                 aspectRatio: 1.3,
                 child: imageUrl.isNotEmpty
                     ? Image.network(
-                        "http://192.168.1.7:3000$imageUrl",
+                        "http://beadaura-backend.onrender.com$imageUrl",
                         fit: BoxFit.cover,
                       )
                     : Container(

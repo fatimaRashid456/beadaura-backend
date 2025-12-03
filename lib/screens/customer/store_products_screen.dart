@@ -31,7 +31,8 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
 
   Future<void> fetchStoreProducts() async {
     print("Fetching products for sellerId: ${widget.sellerId}");
-    final url = "http://192.168.1.7:3000/get-products/${widget.sellerId}";
+    final url =
+        "http://beadaura-backend.onrender.com/get-products/${widget.sellerId}";
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -104,7 +105,7 @@ class _StoreProductsScreenState extends State<StoreProductsScreen> {
                                   product['variants'].isNotEmpty &&
                                   product['variants'][0]['imageUrl'] != null)
                               ? Image.network(
-                                  "http://192.168.1.7:3000${product['variants'][0]['imageUrl']}",
+                                  "http://beadaura-backend.onrender.com${product['variants'][0]['imageUrl']}",
                                   fit: BoxFit.cover,
                                 )
                               : Image.asset(

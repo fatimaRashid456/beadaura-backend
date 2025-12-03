@@ -92,7 +92,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     var request = http.MultipartRequest(
       "POST",
-      Uri.parse("http://192.168.1.7:3000/add-product"),
+      Uri.parse("http://beadaura-backend.onrender.com/add-product"),
     );
 
     // Add basic product info

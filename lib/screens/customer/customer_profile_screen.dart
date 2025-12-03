@@ -16,7 +16,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   Map<String, dynamic>? userData;
   bool loading = true;
 
-  final String serverUrl = "http://192.168.1.7:3000/get-user";
+  final String serverUrl = "http://beadaura-backend.onrender.com/get-user";
 
   @override
   void initState() {

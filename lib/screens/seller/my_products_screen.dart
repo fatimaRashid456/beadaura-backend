@@ -34,7 +34,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
 
     try {
       var response = await http.get(
-        Uri.parse("http://192.168.1.7:3000/get-products/$sellerId"),
+        Uri.parse(
+          "http://beadaura-backend.onrender.com/get-products/$sellerId",
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -59,7 +61,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   Future<void> deleteProduct(String productId) async {
     try {
       var response = await http.delete(
-        Uri.parse("http://192.168.1.7:3000/delete-product/$productId"),
+        Uri.parse(
+          "http://beadaura-backend.onrender.com/delete-product/$productId",
+        ),
       );
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(
@@ -81,7 +85,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   Future<void> toggleProductStatus(String productId, bool status) async {
     try {
       var response = await http.put(
-        Uri.parse("http://192.168.1.7:3000/toggle-product/$productId"),
+        Uri.parse(
+          "http://beadaura-backend.onrender.com/toggle-product/$productId",
+        ),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"active": status}),
       );
@@ -148,7 +154,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            "http://192.168.1.7:3000${product["imageUrl"]}",
+                            "http://beadaura-backend.onrender.com${product["imageUrl"]}",
                             width: 80,
                             height: 80,
                             fit: BoxFit.cover,
@@ -239,7 +245,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                               try {
                                 var response = await http.put(
                                   Uri.parse(
-                                    "http://192.168.1.7:3000/toggle-out-of-stock/${product['_id']}",
+                                    "http://beadaura-backend.onrender.com/toggle-out-of-stock/${product['_id']}",
                                   ),
                                   headers: {"Content-Type": "application/json"},
                                   body: jsonEncode({

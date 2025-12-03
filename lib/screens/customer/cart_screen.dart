@@ -23,7 +23,9 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> fetchCart() async {
-    final url = Uri.parse("http://192.168.1.7:3000/cart/${widget.userId}");
+    final url = Uri.parse(
+      "http://beadaura-backend.onrender.com/cart/${widget.userId}",
+    );
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -46,7 +48,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> deleteFromCart(String cartItemId) async {
     try {
       final url = Uri.parse(
-        "http://192.168.1.7:3000/delete-cart-item/$cartItemId",
+        "http://beadaura-backend.onrender.com/delete-cart-item/$cartItemId",
       );
       final response = await http.delete(url);
       if (response.statusCode == 200) {
@@ -94,7 +96,7 @@ class _CartScreenState extends State<CartScreen> {
         height: 100,
         child: imageUrl.isNotEmpty
             ? Image.network(
-                "http://192.168.1.7:3000$imageUrl",
+                "http://beadaura-backend.onrender.com$imageUrl",
                 fit: BoxFit.cover,
                 color: product['outOfStock'] == true ? Colors.grey : null,
                 colorBlendMode: product['outOfStock'] == true

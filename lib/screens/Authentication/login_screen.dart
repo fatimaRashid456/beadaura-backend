@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = true);
 
     try {
-      var url = Uri.parse('http://192.168.1.7:3000/login');
+      var url = Uri.parse('http://beadaura-backend.onrender.com/login');
 
       // Your server IP
       var response = await http.post(

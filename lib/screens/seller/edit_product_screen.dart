@@ -106,7 +106,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     var request = http.MultipartRequest(
       "PUT",
       Uri.parse(
-        "http://192.168.1.7:3000/update-product/${widget.product['_id']}",
+        "http://beadaura-backend.onrender.com/update-product/${widget.product['_id']}",
       ),
     );
 
@@ -253,7 +253,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                               : variant.imageUrl != null
                               ? DecorationImage(
                                   image: NetworkImage(
-                                    "http://192.168.1.7:3000${variant.imageUrl}",
+                                    "http://beadaura-backend.onrender.com${variant.imageUrl}",
                                   ),
                                   fit: BoxFit.cover,
                                 )

@@ -55,7 +55,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.1.7:3000/get-seller/$userId"),
+        Uri.parse("http://beadaura-backend.onrender.com/get-seller/$userId"),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -104,7 +104,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     try {
       var request = http.MultipartRequest(
         "PUT",
-        Uri.parse("http://192.168.1.7:3000/update-seller/$userId"),
+        Uri.parse("http://beadaura-backend.onrender.com/update-seller/$userId"),
       );
 
       request.fields.addAll({
@@ -214,7 +214,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                           ? FileImage(selectedImage!)
                           : (imageUrl != null
                                     ? NetworkImage(
-                                        "http://192.168.1.7:3000$imageUrl",
+                                        "http://beadaura-backend.onrender.com$imageUrl",
                                       )
                                     : null)
                                 as ImageProvider?,

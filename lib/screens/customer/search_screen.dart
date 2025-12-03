@@ -121,7 +121,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   bool loading = true;
   String? errorMessage;
 
-  final String serverUrl = "http://192.168.1.7:3000/get-products";
+  final String serverUrl = "http://beadaura-backend.onrender.com/get-products";
 
   @override
   void initState() {
@@ -246,7 +246,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                   }
 
                   if (imageUrl.startsWith("/uploads")) {
-                    imageUrl = "http://192.168.1.7:3000$imageUrl";
+                    imageUrl = "http://beadaura-backend.onrender.com$imageUrl";
                   }
 
                   return GestureDetector(

@@ -83,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                           try {
                             var url = Uri.parse(
-                              'http://192.168.1.7:3000/verify-otp',
+                              'http://beadaura-backend.onrender.com/verify-otp',
                             );
                             var response = await http.post(
                               url,
@@ -159,7 +159,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => loading = true);
 
-    var url = Uri.parse('http://192.168.1.7:3000/signup');
+    var url = Uri.parse('http://beadaura-backend.onrender.com/signup');
     var bodyData = {
       "name": nameController.text.trim(),
       "email": emailController.text.trim(),

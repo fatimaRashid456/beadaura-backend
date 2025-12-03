@@ -40,7 +40,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     }
 
     try {
-      final url = Uri.parse('http://192.168.1.7:3000/get-seller/$sellerId');
+      final url = Uri.parse(
+        'http://beadaura-backend.onrender.com/get-seller/$sellerId',
+      );
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -105,7 +107,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     itemBuilder: (context, index) {
                       String imageUrl = variants[index]['imageUrl'] ?? '';
                       if (imageUrl.startsWith("/uploads")) {
-                        imageUrl = "http://192.168.1.7:3000$imageUrl";
+                        imageUrl = "beadaura-backend.onrender.com$imageUrl";
                       }
                       return imageUrl.isNotEmpty
                           ? Image.network(
@@ -389,7 +391,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                         try {
                           final url = Uri.parse(
-                            "http://192.168.1.7:3000/add-to-cart",
+                            "http://beadaura-backend.onrender.com/add-to-cart",
                           );
                           final response = await http.post(
                             url,
